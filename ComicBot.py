@@ -2,10 +2,13 @@
 # -*- coding: utf-8 -*-
 #############################
 #Sample Retweetbot
-#V1.2
+#V1.4
 #MichaelJranglin@gmail.com
 #############################
 import re
+import os
+import random
+import multiprocessing
 import sys
 import time
 import twython
@@ -19,51 +22,75 @@ CONSUMER_KEY = 'blank'#keep the quotes, replace this with your consumer key
 CONSUMER_SECRET = 'blank'#keep the quotes, replace this with your consumer secret key
 ACCESS_KEY = 'blank-pbN3IiTH2ONFeZd4fU0XjnrGh3IN6uH'#keep the quotes, replace this with your access token
 ACCESS_SECRET = 'blank'#keep the quotes, replace this with your access token secretapi = Twython(CONSUMER_KEY, CONSUMER_SECRET, ACCESS_KEY, ACCESS_SECRET)
+
 api = Twython(CONSUMER_KEY, CONSUMER_SECRET, ACCESS_KEY, ACCESS_SECRET)
-tlist = []
+#necessary files
+StreamFileName = time.strftime("%b_%d_%y")+"_StreamLog.txt"
+TweetFileName = time.strftime("%b_%d_%y")+"_TweetLog.txt" 
 
-#trying manually retweeting and adding own words
-#STOP BOT FROM RETWEETING SAME FUCKING TWEETS IN A ROW FROM OTHER FUCKING BOTS
-
-##use try catch
-def Do_RT(tib):
-    Tweetid = tib['id_str']
-    TweetImgurl = tib['entities']['media'][0]['id']
-    Tweetusername = tib['user']['screen_name']
-    TweetText = 'https://twitter.com/'+Tweetusername+'/status/'+Tweetid
-
-    ReTweet = 'Hi I am ComicTweetBot! I Retweet Comics! Use #comicretweetbot '+TweetText 
+def RT(ID, name):
+    print("RT")
+    #Tid = int(float(ID))
+    tim = time.strftime("%M")
+    Tweetusername = 'ComicTweetBot'
+    TweetText = 'https://twitter.com/'+Tweetusername+'/status/'+ID
+    ReTweet = 'Hi I am ComicTweetBot!('+tim+') I Retweet Comics! Use #comicretweetbot '+TweetText 
+    Log = open(TweetFileName, 'a')
+    enterlog = ID+' '+name+ '\n'
+    Log.write(enterlog)
+    Log2 = open('TweetLog.txt', 'a')
+    Log2.write(ID+'\n')
+    #api.update_status(status= ReTweet)
+    api.retweet(id = ID)
+    api.create_favorite(id=ID, include_entities = True)
+    #randomize the time for sleep 1.5mins to 5 mins
+    rant = random.randrange(180, 1000, 2)
+    time.sleep(rant)
     
+    
+   
+    
+def Do_RT():
+    DoRT = True
+    twi = open(TweetFileName).read()
+    twilog = open('TweetLog.txt').read()
+    with open(StreamFileName) as f:
+        for line in f:
             
+            one = line.split()
+            
+            if any(x in twi for x in one) or one[0] in twilog:
+                
+                DoRT = False
+                        
+            else:
+                DoRT = True
+                    
+            if DoRT == True:
+                RT(one[0], one[1])
+    return
+       
 
 
-    Log = open('log.txt', 'a')
-    Log.write(Tweetid +' '+Tweetusername+'\n')
-    api.update_status(status= ReTweet)
-    api.create_favorite(id=Tweetid, include_entities = True)
 
-    
-    #api.retweet(id = tib)
-    #tlist.append(tib)
-    
-    #timeout on sucessfull retweet
-    
-        
 def Can_RT(twib):
     RT = 0
-    if 'retweeted_status' in twib or 'RT: @' in twib['text']:
-            if twib['retweeted_status']['id_str'] in open('log.txt', "r").read():
+    txtfile2 = open('TweetLog.txt', "r").read()
+    txtfile = open(TweetFileName, "r").read()
+    if 'retweeted_status' in twib or 'RT: @' in twib['text'] or twib['retweeted'] == True:
+            
+            if twib['retweeted_status']['user']['screen_name'] in txtfile or twib['retweeted_status']['id_str'] in txtfile or 'ComicTweetBot' in twib['retweeted_status']['user']['screen_name'] or twib['retweeted_status']['id_str'] in txtfile2 :
                 RT= 0
             else:
-                RT = twib['retweeted_status']
+                RT = twib['retweeted_status']['id_str']
 
                 
     else:
         
-            if twib['id_str'] in open('log.txt', "r").read():
+            if twib['user']['screen_name'] in txtfile or twib['id_str'] in txtfile or 'ComicTweetBot' in twib['user']['screen_name'] or twib['id_str'] in txtfile2:
                 RT= 0
             else:
-                RT = twib
+                RT = twib['id_str']
                 
     return RT
     
@@ -77,23 +104,15 @@ class MyStreamer(TwythonStreamer):
                     stri = data['text']
                     lstri = stri.lower()
                     if  any(x in lstri for x in ComicCheck) :
-                    #for x in ComicCheck:
-                        
-                        
-                       # rmat = re.search(x, stri, re.IGNORECASE)
-                        #if rmat :
-                    #if 'new comic' or 'New comic' or 'New Comic' or 'Old comic' or 'old comic' or 'Old Comic' in data['text'] :
-                                print(data['id_str'])
+                         print(data['id_str'])
+                         CRT = Can_RT(data)
+                         if  CRT != 0:
                                 
-                                     
-                                
-                                #Returned collection with tweets on authenticated user timeline
-                                #tline = api.get_user_timeline(user_id = self, exclude_replies = 'true', count = 200, include_rts = 'true')
-                                #Each new tweet id in string
-                                NewTweet = data['id_str']
-                                if Can_RT(data) != 0:
-                                    Do_RT(Can_RT(data))
-                                    time.sleep(90)
+                            
+                                StreamLog = open(StreamFileName, 'a')
+                                NewTweet = CRT+' '+data['user']['screen_name']
+                                StreamLog.write(NewTweet+'\n')
+                            
                     
             
                 
@@ -105,24 +124,47 @@ class MyStreamer(TwythonStreamer):
 
         # Want to stop trying to get data because of the error?
         # Uncomment the next line!
-        #self.disconnect()
-
-    def Dconnection(self):
         self.disconnect()
+
+   
 
 
 
 #Change parameters to filter incoming tweet stream.
 stream = MyStreamer(CONSUMER_KEY, CONSUMER_SECRET, ACCESS_KEY, ACCESS_SECRET)
-def run_bot():
-    while True:
-        #try:
-            stream.statuses.filter(track='comic')
-           # break
-        #except:
-         #   stream.statuses.filter(track='new, old, comic')
-            
-        #else:
-         #   return
-run_bot()
+def Stream():
+        while True:
+            name = multiprocessing.current_process().name
+            try:
+                stream.statuses.filter(track='comic')
+                #print("Stream")
+            except:
+                continue
+def Tweet_stream():
     
+        name = multiprocessing.current_process().name
+        while True:
+            try:
+                Do_RT()
+                #print("Tweet Attempt")
+            except:
+                continue
+                    
+if __name__ == '__main__':
+       
+        if os.path.isfile(StreamFileName) is False:
+            open(StreamFileName, 'a')
+        if os.path.isfile(StreamFileName) is False:
+            open('TweetLog.txt', 'a')
+            
+        if os.path.isfile(TweetFileName) is False:
+            twfile = open(TweetFileName, 'a')
+            twfile.write('0 ComicTweetBot')
+            
+        ServiceStream = multiprocessing.Process(name='Stream', target=Stream)
+        ServiceTweet=   multiprocessing.Process(name='Tweet_stream', target=Tweet_stream)
+        ServiceStream.start()
+        ServiceTweet.start()
+        
+        
+        
