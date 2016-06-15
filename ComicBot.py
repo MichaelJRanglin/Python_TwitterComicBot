@@ -18,10 +18,10 @@ from twython import TwythonStreamer
  
  
 #enter the corresponding information from your Twitter application:
-CONSUMER_KEY = 'blank'#keep the quotes, replace this with your consumer key
-CONSUMER_SECRET = 'blank'#keep the quotes, replace this with your consumer secret key
-ACCESS_KEY = 'blank-pbN3IiTH2ONFeZd4fU0XjnrGh3IN6uH'#keep the quotes, replace this with your access token
-ACCESS_SECRET = 'blank'#keep the quotes, replace this with your access token secretapi = Twython(CONSUMER_KEY, CONSUMER_SECRET, ACCESS_KEY, ACCESS_SECRET)
+CONSUMER_KEY = 'jqBCOWg9cdXZYBDMJM1rh12xQ'#keep the quotes, replace this with your consumer key
+CONSUMER_SECRET = 'AktqLb3TXub4pj8ZlyL3dtjyoNUW8moZXaoVLUDVkhBrvkq20b'#keep the quotes, replace this with your consumer secret key
+ACCESS_KEY = '733405687351365637-pbN3IiTH2ONFeZd4fU0XjnrGh3IN6uH'#keep the quotes, replace this with your access token
+ACCESS_SECRET = 'uODza38kstufIfPqQbmp9Tbw0z7RvavwQlrGMk37Nulfv'#keep the quotes, replace this with your access token secretapi = Twython(CONSUMER_KEY, CONSUMER_SECRET, ACCESS_KEY, ACCESS_SECRET)
 
 api = Twython(CONSUMER_KEY, CONSUMER_SECRET, ACCESS_KEY, ACCESS_SECRET)
 #necessary files
@@ -29,6 +29,7 @@ StreamFileName = time.strftime("%b_%d_%y")+"_StreamLog.txt"
 TweetFileName = time.strftime("%b_%d_%y")+"_TweetLog.txt" 
 
 def RT(ID, name):
+    """Performs retweet"""
     print("RT")
     #Tid = int(float(ID))
     tim = time.strftime("%M")
@@ -51,6 +52,7 @@ def RT(ID, name):
    
     
 def Do_RT():
+    """Similar to Can_RT however is for redundancy"""
     DoRT = True
     twi = open(TweetFileName).read()
     twilog = open('TweetLog.txt').read()
@@ -74,6 +76,7 @@ def Do_RT():
 
 
 def Can_RT(twib):
+    """function to check to see if tweet is duplicate or has been tweeted by bot"""
     RT = 0
     txtfile2 = open('TweetLog.txt', "r").read()
     txtfile = open(TweetFileName, "r").read()
@@ -95,23 +98,35 @@ def Can_RT(twib):
     return RT
     
 class MyStreamer(TwythonStreamer):
-    #edit the on_sucess method to handle how data stream is parsed
+    """The stream class derived drom twython streamer class that
+        deals with data as it is recieved from the twitter stream"""
+
+    
     def on_success(self, data):
+        #checks for a media link in the tweet object (images)
        if 'entities' in data:
             if 'media' in data['entities']:
                 if data['entities']['media'][0]['media_url'] != None:
-                    ComicCheck = ['new comic', 'old comic' , 'comic strip' , 'web comic', 'webcomic']
+                    #simplified method to parse information
+                    #lower cases all letters in text // Regular expression casued script to hang
                     stri = data['text']
                     lstri = stri.lower()
-                    if  any(x in lstri for x in ComicCheck) :
-                         print(data['id_str'])
-                         CRT = Can_RT(data)
-                         if  CRT != 0:
+                    #filter these words // Will be moved to config file
+                    SFWfilter = ['sex', 'fuck', 'porn', 'fucking'] #words NOT to be in tweet
+                    ComicCheck = ['new comic', 'old comic' , 'comic strip' , 'web comic', 'webcomic']
+                    if  any(x in lstri for x in SFWfilter):
+                        pass
+                    else:
+                        
+                        if  any(x in lstri for x in ComicCheck) :
+                             print(data['id_str'])
+                             CRT = Can_RT(data)
+                             if  CRT != 0:
+                                    
                                 
-                            
-                                StreamLog = open(StreamFileName, 'a')
-                                NewTweet = CRT+' '+data['user']['screen_name']
-                                StreamLog.write(NewTweet+'\n')
+                                    StreamLog = open(StreamFileName, 'a')
+                                    NewTweet = CRT+' '+data['user']['screen_name']
+                                    StreamLog.write(NewTweet+'\n')
                             
                     
             
@@ -133,7 +148,9 @@ class MyStreamer(TwythonStreamer):
 #Change parameters to filter incoming tweet stream.
 stream = MyStreamer(CONSUMER_KEY, CONSUMER_SECRET, ACCESS_KEY, ACCESS_SECRET)
 def Stream():
-        while True:
+    """Function that will manage doing the twitter stream"""
+    
+    while True:
             name = multiprocessing.current_process().name
             try:
                 stream.statuses.filter(track='comic')
@@ -141,29 +158,34 @@ def Stream():
             except:
                 continue
 def Tweet_stream():
-    
-        name = multiprocessing.current_process().name
-        while True:
+    """Function that will manage doing the retweet"""
+    name = multiprocessing.current_process().name
+    while True:
             try:
                 Do_RT()
                 #print("Tweet Attempt")
             except:
                 continue
-                    
+def Create_log():
+    """Function that will create log file"""
+    name = multiprocessing.current_process().name
+    while True:
+            if os.path.isfile(StreamFileName) is False:
+                open(StreamFileName, 'a')
+            if os.path.isfile(StreamFileName) is False:
+                open('TweetLog.txt', 'a')
+            
+            if os.path.isfile(TweetFileName) is False:
+                twfile = open(TweetFileName, 'a')
+                twfile.write('0 ComicTweetBot')
+            
 if __name__ == '__main__':
-       
-        if os.path.isfile(StreamFileName) is False:
-            open(StreamFileName, 'a')
-        if os.path.isfile(StreamFileName) is False:
-            open('TweetLog.txt', 'a')
-            
-        if os.path.isfile(TweetFileName) is False:
-            twfile = open(TweetFileName, 'a')
-            twfile.write('0 ComicTweetBot')
-            
+    
         ServiceStream = multiprocessing.Process(name='Stream', target=Stream)
         ServiceTweet=   multiprocessing.Process(name='Tweet_stream', target=Tweet_stream)
+        Servicelog = multiprocessing.Process(name='Create_log', target= Create_log)
         ServiceStream.start()
+        Servicelog.start()
         ServiceTweet.start()
         
         
