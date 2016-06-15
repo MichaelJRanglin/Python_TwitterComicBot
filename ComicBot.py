@@ -18,10 +18,10 @@ from twython import TwythonStreamer
  
  
 #enter the corresponding information from your Twitter application:
-CONSUMER_KEY = 'jqBCOWg9cdXZYBDMJM1rh12xQ'#keep the quotes, replace this with your consumer key
-CONSUMER_SECRET = 'AktqLb3TXub4pj8ZlyL3dtjyoNUW8moZXaoVLUDVkhBrvkq20b'#keep the quotes, replace this with your consumer secret key
-ACCESS_KEY = '733405687351365637-pbN3IiTH2ONFeZd4fU0XjnrGh3IN6uH'#keep the quotes, replace this with your access token
-ACCESS_SECRET = 'uODza38kstufIfPqQbmp9Tbw0z7RvavwQlrGMk37Nulfv'#keep the quotes, replace this with your access token secretapi = Twython(CONSUMER_KEY, CONSUMER_SECRET, ACCESS_KEY, ACCESS_SECRET)
+CONSUMER_KEY = ''#keep the quotes, replace this with your consumer key
+CONSUMER_SECRET = ''#keep the quotes, replace this with your consumer secret key
+ACCESS_KEY = '-'#keep the quotes, replace this with your access token
+ACCESS_SECRET = ''#keep the quotes, replace this with your access token secretapi = Twython(CONSUMER_KEY, CONSUMER_SECRET, ACCESS_KEY, ACCESS_SECRET)
 
 api = Twython(CONSUMER_KEY, CONSUMER_SECRET, ACCESS_KEY, ACCESS_SECRET)
 #necessary files
