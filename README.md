@@ -17,9 +17,9 @@ Creates Log file of month day and year
 Log file contains tweet ID and Username
 Fully automated
 
-TODO:
-Bot needs to create new log file while running when new day begins
-Move keys to config file
-Add more filter words.
+v1.5
+Added log file that creates new log daily
+Added NSFW filters
+Added config file utiltiy
 
 
